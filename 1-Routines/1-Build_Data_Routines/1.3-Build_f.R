@@ -37,7 +37,7 @@ baseFadData <- foreach(fn =fadData_fn, .combine = rbind)%do%
   ###   Spatialize presence/absence data
   suppressWarnings(spat_echo <- spatialize(longitude = buoysDataEcho$longitude,
                           latitude = buoysDataEcho$latitude,
-                          resolution = SPATIAL_SCALE,#, spatialRes ="D:/THESE_scripts/0-Resources/Maps/LonghurstArea")
+                          resolution = SPATIAL_SCALE,
                           field = "region"))
   buoysDataEcho <- cbind.data.frame(buoysDataEcho, spat_echo[, c("x", "y", "zone")])
   rm(spat_echo)
@@ -57,6 +57,20 @@ baseFadData <- baseFadData%>%
 write.csv2(baseFadData, file =  file.path(f1_OUTPUTS, "presAbsData.csv"), row.names = F)
 cat("Done.\n")
 
+
+### Recalculate trajID for whole trajectories
+cat(crayon::green("\t    -  Recalculate trajectories ID <trajID> for whole trajectories..."))
+baseFadData <- baseFadData%>%
+  dplyr::mutate(sensor_date = as.Date(sensor_date))%>%
+  dplyr::group_by(buoy_id)%>%
+  dplyr::arrange(sensor_date, .by_group = T)%>%
+  dplyr::mutate(trajId = cutTrajectory(time = sensor_date,
+                                       longitude = longitude,
+                                       latitude = latitude,
+                                       timeIntervalThreshold = 48, 
+                                       speedThreshold = 35))
+write.csv2(baseFadData, file =  file.path(f1_OUTPUTS, "presAbsData_recalculatedTrajId.csv"), row.names = F)
+cat("Done.\n")
 
 ### 3.2. Truncation type I: Identification chronology (sections) of CART succession on trajectories 
 if(TRUNCATE_START_SECTIONS_FOR_F_COMPUTATIONS)
@@ -203,7 +217,7 @@ f1Data <- merge.data.frame(x = f1Data,
 if(FIll_IN_MISSING_DATA)
 {
   #### Computing quarterly average of species composition over the study area
-  cat(crayon::green("\t\t    +  Averaging species occurence over the study area for missing  values...."))
+  cat(crayon::green("\t\t    +  Compute quarterly average of species occurence over the study period in each area...."))
   
   timescale_aggr_occurence <- as.data.frame(samplingData %>%
                           # Compute the total number of sets per strata and fishing mode
@@ -227,7 +241,7 @@ if(FIll_IN_MISSING_DATA)
   
   
   #### Substituting missing values by the quarterly average of species compotion over the study area
-  cat(crayon::green("\t\t    +  Substituting missing occurence values by their quarterly average ...."))
+  cat(crayon::green("\t\t    +  Substituting missing occurence values by their quarterly averages...."))
   f1Data <- merge.data.frame(x=f1Data, y = timescale_aggr_occurence, 
                              by =c("x", "y", "timescale"),
                              all.x = T, suffixes = c("","_tsAggr"))%>%
