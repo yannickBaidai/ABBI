@@ -81,7 +81,7 @@ cat("Done.\n")
 #' notes), in order to correct data misreporting from skippers: T3-L2 process.
 #' Since logbook data are also  affected by misestimation   of species catches
 #' (SKJ generally  overestimated, while YFT  underestimated),  average species
-#' composition calculated over the time-area strata and obtained from sampling 
+#' composition calculated over the study period in the same area from sampling 
 #' data are here used in order to correct the catch declarations.
 #'---------------------------------------------------------------------------#     
 
@@ -177,7 +177,7 @@ catchData <- merge.data.frame(x = catchData,
 if(FIll_IN_MISSING_DATA)
 {
   #### Computing quarterly average of species composition over the study area
-  cat(crayon::green("\t\t          +  Averaging over the study area for missing species composition values...."))
+  cat(crayon::green("\t\t          +  Compute quarterly average of species composition over the study period in each area...."))
   species_composition_timeAggr <- samplingData%>%
     # Discarding area out of selected strata
     dplyr::filter(zone != "OFF_ZONE")%>%  
