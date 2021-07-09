@@ -44,14 +44,15 @@ ggplot(rbind.data.frame(log_prop, smp_prop),
 ggsave(filename = file.path(m_OUTPUTS, "1-species_composition_logbook_vs_Sampling.png"), width = 20, height =18, units = "cm", dpi = 600)
 cat("Done.\n")
    
-##### 2. FOB Species composition over time per strata----------------
-cat(crayon::green("\t\t   3.2.2. Time evolution of FOB species compositions per strata....."))
+##### 2. FOB Species composition over time per strata--------------------------------------------------
+cat(crayon::green("\t\t    3.2.2. Time evolution of FOB species compositions per strata....."))
 species_composition <- read.csv2(file.path(m_OUTPUTS, "species_composition.csv"), stringsAsFactors =F)%>%
 	dplyr::filter(fishing_mode=="fob")%>%
 	dplyr::mutate(timestamp = dplyr::case_when(
 			toupper(TIME_SCALE) == "QUARTER" ~ as.Date(as.POSIXct(zoo::as.yearqtr(paste0(year, "-Q", timescale),format = "%Y-Q%q"))),
 			toupper(TIME_SCALE) == "MONTH"   ~ as.Date(as.POSIXct(zoo::as.yearmon(paste0("01", timescale, year),format = "%d%B%Y")))),
 			y = factor(y, levels = sort(unique(y), decreasing = T), ordered = T))
+
 
 
 ### All species (stacked barplot)
@@ -113,8 +114,49 @@ if(FIll_IN_MISSING_DATA)
     theme_classic(base_size = 10)+
     theme(panel.background = element_rect(colour="black"))+
     facet_grid(y~x)
-  ggsave(filename = file.path(m_OUTPUTS, "3-Overall_species_composition_per_timescale.jpg"),
+  ggsave(filename = file.path(m_OUTPUTS, "3.1-Overall_species_composition_per_timescale.jpg"),
          width = 16, height = 9, dpi = 300, units = "cm")
+  
+  
+  # Species proportion with reconstructed values (approxiamted from quartely average of porportion in the same area) -----------------------
+  #### Dataframe with corrected values : Approximated and actual proportions values
+  sp_corrected <- species_composition%>%
+    dplyr::filter(fishing_mode=="fob", species==SPECIES,
+                  (is.na(weight_category) | weight_category == SIZE_CLASS))%>%
+    dplyr::group_by(zone, x, y)%>%
+    dplyr::group_modify(~ merge.data.frame(x = .x,
+                                           y = data.frame(timestamp = seq.Date(from = as.Date("2013-01-01"), to =  as.Date("2019-10-01"), by= tolower(TIME_SCALE)),
+                                                          timescale = rep(1:4, 7)),
+                                           all.y = T))%>%
+    dplyr::select(zone, x,y, timestamp, timescale, class_prop, class_sd)%>%
+    dplyr::mutate(approx = ifelse(is.na(class_prop), T, F))
+  
+  aggr_species_composition <- read.csv2(file.path(m_OUTPUTS, "time_aggregated_species_composition.csv"), stringsAsFactors =F)%>%
+    dplyr::filter(fishing_mode=="fob", species==SPECIES,
+                  (is.na(weight_category) | weight_category == SIZE_CLASS))%>%
+    dplyr::select(x , y, timescale, class_prop, class_sd)
+  
+  sp_corrected <- merge.data.frame(x= sp_corrected, y= aggr_species_composition, by=c("x", "y", "timescale"),
+                                   all.x = T, suffixes = c("","_aggr"))%>%
+    dplyr::mutate(class_prop  = ifelse(is.na(class_prop), class_prop_aggr, class_prop),
+                  class_sd    = ifelse(is.na(class_sd),  class_sd_aggr, class_sd))
+  
+  #### plot reconstructed time series
+  ggplot(sp_corrected, aes(x= timestamp, y = class_prop))+
+    geom_errorbar(aes(ymin=class_prop-class_sd, ymax=class_prop+class_sd), width=30, alpha=0.5)+
+    geom_line(size= 0.6)+
+    geom_point(aes(fill = approx), shape=21, size=1.5)+
+    scale_fill_manual(values=c("white", "red"))+
+    labs(y="Proportion", x="Time", color="Size class",
+         title = paste0(SPECIES, " proportion in FOB-sampled sets per strata"),
+         caption="Red points represents proportion values approximated from\nthe quartely average proportion over the study period in the spatial strata")+
+    theme_classic(base_size = 8)+
+    theme(legend.position = "bottom",
+          panel.background = element_rect(colour="black"),
+          legend.key.size = unit(0.25, "cm"))+
+    facet_grid(y~x)
+  ggsave(filename = file.path(m_OUTPUTS, paste0("3.2-reconstructed_species_proportion_with_approximated_values.jpg")),
+         width = 20, height = 12, dpi = 600, units = "cm")		 
   cat("Done.\n")
 }
 
