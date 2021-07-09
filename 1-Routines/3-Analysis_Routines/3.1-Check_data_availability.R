@@ -48,13 +48,12 @@ if(is.numeric(SPATIAL_SCALE))
   if(!toupper(TIME_SCALE)  %in% c("DAY", "WEEK"))
   {
     library(ggplot2)
-    world <- map_data("world")
-   
+
     # Scatterpie
     df[is.na(df)] <- 0
     ggplot()+
       geom_map(data=world, map=world,aes(map_id =region),fill = "dimgray", color="ivory", size=0.3)+
-      scatterpie::geom_scatterpie(data=df, aes(x, y), cols=c("fads", "catch", "buoys"), color=NA, size=6)+
+      scatterpie::geom_scatterpie(data=df, aes(x, y), cols=c("m", "f", "p"), color=NA, pie_scale = 6)+
       labs(x="Longitude", y="Latitude", fill="Data availability")+
       coord_fixed(xlim = c(20,80), ylim=c(-50,50))+
       theme_linedraw(base_size = 12)+
@@ -65,6 +64,6 @@ if(is.numeric(SPATIAL_SCALE))
             legend.position = "bottom")+
       facet_grid(timescale~year)
     ggsave(filename = file.path(OUTPUTS_DIR, paste0("0.1-data_availability_at_buoysCountThreshold_of", BUOYS_COUNT_THRESHOLD, ".png")),
-           width = 32, height = 18, dpi = 400)
+           width = 32, height = 18, dpi = 600)
   }
 }
