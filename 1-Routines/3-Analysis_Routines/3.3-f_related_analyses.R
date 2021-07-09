@@ -47,8 +47,8 @@ ggsave(filename = file.path(f1_OUTPUTS, "1-time_series_of_species_occurence.jpg"
 cat("Done.\n") 
  
  
-##### 3. Overall  species composition per time----------------
-# Lookup quarterly/monthly average of species composition
+##### 3. Overall  species occurence per time----------------
+# Lookup quarterly/monthly average of species occurence
 if(FIll_IN_MISSING_DATA)
 {
   cat(crayon::green("\t\t     3.3.2. Time evolution of overall FOB species occurence....."))
@@ -75,11 +75,90 @@ if(FIll_IN_MISSING_DATA)
           legend.key.size = unit(0.2, "cm"),
           panel.background =  element_rect(color="black"))+
     facet_grid(y~x)
-  ggsave(filename = file.path(f1_OUTPUTS, "2-species_occurence_over_timescale.jpg"),
+  ggsave(filename = file.path(f1_OUTPUTS, "2.1-species_occurence_over_timescale.jpg"),
          width = 30, height = 15, dpi = 600, units = "cm")
+  
+  
+  # Species proportion with reconstructed values (approxiamted from quartely average of porportion in the same area) -----------------------
+  #### Dataframe with corrected values : Approximated and actual proportions values
+  sp_corrected <- species_occurence%>%
+    dplyr::filter(species==SPECIES,
+                  (is.na(weight_category) | weight_category == SIZE_CLASS))%>%
+    dplyr::group_by(zone, x, y)%>%
+    dplyr::group_modify(~ merge.data.frame(x = .x,
+                                           y = data.frame(timestamp = seq.Date(from = as.Date("2013-01-01"), to =  as.Date("2019-10-01"), by= tolower(TIME_SCALE)),
+                                                          timescale = rep(1:4, 7)),
+                                           all.y = T))%>%
+    dplyr::select(zone, x,y, timestamp, timescale, occurence)%>%
+    dplyr::mutate(approx = ifelse(is.na(occurence), T, F))
+  
+  aggr_species_occurence <- read.csv2(file.path(f1_OUTPUTS, "time_aggregated_species_occurence.csv"), stringsAsFactors =F)%>%
+    dplyr::filter(species==SPECIES,
+                  (is.na(weight_category) | weight_category == SIZE_CLASS))%>%
+    dplyr::select(x , y, timescale, occurence)
+  
+  sp_corrected <- merge.data.frame(x= sp_corrected, y= aggr_species_occurence, by=c("x", "y", "timescale"),
+                                   all.x = T, suffixes = c("","_aggr"))%>%
+    dplyr::mutate(occurence  = ifelse(is.na(occurence), occurence_aggr, occurence))
+  
+  #### plot reconstructed time series
+  ggplot(sp_corrected, aes(x= timestamp, y = occurence))+
+    geom_line(size= 0.6)+
+    geom_point(aes(fill = approx), shape=21, size=1.5)+
+    scale_fill_manual(values=c("white", "red"))+
+    labs(y="Proportion", x="Time", color="Size class",
+         title = paste0(SPECIES, " occurence in FOB-sampled sets per strata"),
+         caption="Red points represents proportion values approximated from\nthe quartely average proportion over the study period in the spatial strata")+
+    theme_classic(base_size = 8)+
+    theme(legend.position = "bottom",
+          panel.background = element_rect(colour="black"),
+          legend.key.size = unit(0.25, "cm"))+
+    facet_grid(y~x)
+  ggsave(filename = file.path(m_OUTPUTS, paste0("2.2-reconstructed_species_occurence_over_timescale.jpg")),
+         width = 20, height = 12, dpi = 600, units = "cm")		 
   cat("Done.\n")
 }
  
+
+
+sp_corrected <- species_composition%>%
+  dplyr::filter(fishing_mode=="fob", species==SPECIES,
+                (is.na(weight_category) | weight_category == SIZE_CLASS))%>%
+  dplyr::group_by(zone, x, y)%>%
+  dplyr::group_modify(~ merge.data.frame(x = .x,
+                                         y = data.frame(timestamp = seq.Date(from = as.Date("2013-01-01"), to =  as.Date("2019-10-01"), by= tolower(TIME_SCALE)),
+                                                        timescale = rep(1:4, 7)),
+                                         all.y = T))%>%
+  dplyr::select(zone, x,y, timestamp, timescale, class_prop, class_sd)%>%
+  dplyr::mutate(approx = ifelse(is.na(class_prop), T, F))
+
+aggr_species_composition <- read.csv2(file.path(m_OUTPUTS, "time_aggregated_species_composition.csv"), stringsAsFactors =F)%>%
+  dplyr::filter(fishing_mode=="fob", species==SPECIES,
+                (is.na(weight_category) | weight_category == SIZE_CLASS))%>%
+  dplyr::select(x , y, timescale, class_prop, class_sd)
+
+sp_corrected <- merge.data.frame(x= sp_corrected, y= aggr_species_composition, by=c("x", "y", "timescale"),
+                                 all.x = T, suffixes = c("","_aggr"))%>%
+  dplyr::mutate(class_prop  = ifelse(is.na(class_prop), class_prop_aggr, class_prop),
+                class_sd    = ifelse(is.na(class_sd),  class_sd_aggr, class_sd))
+
+
+ggplot(sp_corrected, aes(x= timestamp, y = class_prop))+
+  geom_errorbar(aes(ymin=class_prop-class_sd, ymax=class_prop+class_sd), width=30, alpha=0.5)+
+  geom_line(size= 0.6)+
+  geom_point(aes(fill = approx), shape=21, size=1.5)+
+  scale_fill_manual(values=c("white", "red"))+
+  labs(y="Proportion", x="Time", color="Size class",
+       title = paste0(SPECIES, " proportion in FOB-sampled sets per strata"),
+       caption="Red points represents proportion values approximated from the quartely\naverage proportion over the study period in the spatial strata")+
+  theme_classic(base_size = 8)+
+  theme(legend.position = "bottom",
+        panel.background = element_rect(colour="black"),
+        legend.key.size = unit(0.25, "cm"))+
+  facet_grid(y~x)
+ggsave(filename = file.path(m_OUTPUTS, paste0("2.0-", SPECIES, "species_proportion_with_approximated_values_.jpg")),
+       width = 20, height = 12, dpi = 600, units = "cm")		 
+
 
 #### 3. Distribution of average f and buoy number in the different strata----------------
 cat(crayon::green("\t\t     3.3.3. Distribution of average proportion of inhabited FOBs and M3I buoy number in the different stratum...."))
@@ -130,7 +209,7 @@ ggdf <-  melt_nd(data=f1Data[, c("timestamp", "x", "y", "avg_f1", "avg_f1_uncorr
 ggdf <- ggdf %>%
   dplyr::mutate(variable.avg = plyr::mapvalues(x = ggdf$variable.avg, 
                                                from= c("avg_f1", "avg_f1_uncorrected"),
-                                               to = c(paste0("Tuna aggregation with more than ", BIOMASS_OCCURENCE_THRESHOLD, " kg of ", SPECIES, 
+                                               to = c(paste0("Tuna aggregation with more than ", BIOMASS_OCCURENCE_THRESHOLD, " tons of ", SPECIES, 
                                                              ifelse(SPECIES=="SKJ", "", paste0("(", SIZE_CLASS, ") "))), 
                                                       "Tuna aggregation")),
                 y = factor(ggdf$y, levels = sort(unique(y), decreasing = T), ordered = T),
@@ -196,7 +275,7 @@ if(is.numeric(SPATIAL_SCALE))
   #                       size = 0.5,
   #                       cellSize = SPATIAL_SCALE,
   #                       linetype="solid")
-  ggsave(filename = file.path(f1_OUTPUTS, paste0("5-f1_over_year.jpg")),
+  ggsave(filename = file.path(f1_OUTPUTS, paste0("5-corrected_f1_over_year.jpg")),
          width = 30, height = 20, dpi = 1200, units="cm")
 }
 cat("Done.\n")
