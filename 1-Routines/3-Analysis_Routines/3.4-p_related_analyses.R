@@ -65,7 +65,7 @@ cat("Done.\n")
 #### 3. Time series of log and DFADs proportion  ------------------------------------------------------------------
 cat(crayon::green("\t\t     3.4.3. Time series of log/DFADs proportion....."))
 
-logFad_prop <- read.csv2(file.path(Nfob_OUTPUTS, "logFad_prop"), stringsAsFactors = F)
+logFad_prop <- read.csv2(file.path(Nfob_OUTPUTS, "logFad_prop.csv"), stringsAsFactors = F)
 ggdf <- reshape::melt.data.frame(data = logFad_prop, id.vars = c("year", "raisingLog"))
 ggdf$variable <- plyr::mapvalues(x = ggdf$variable, from=c("Logs"), to = c("Other"))
 
