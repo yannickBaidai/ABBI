@@ -80,7 +80,7 @@ cat("Done.\n")
 
 
 #### 2. Quarterly average of <Nassoc>  ----------------------------------------------------------------------------------
-cat(crayon::green("\t\t     3.5.2. TTime series of Nassoc...."))
+cat(crayon::green("\t\t     3.5.2. Time series of Nassoc...."))
 
 df <- as.data.frame(read.csv2(file = file.path(OUTPUTS_DIR, "abundance_estimates.csv"), stringsAsFactors = F)%>%
                       dplyr::mutate(timestamp = as.Date(timestamp))%>%
@@ -144,10 +144,10 @@ if(is.numeric(SPATIAL_SCALE))
   ggsave(filename = file.path(OUTPUTS_DIR, "2.2-Absolute_Nassoc.png"),
          width = 30, height = 20, dpi = 1200, units="cm")  
 }
-cat("Dpne.\n")
+cat("Done.\n")
 
 #### 3. Quarterly average of <Nfree>  ----------------------------------------------------------------------------------
-cat(crayon::green("\t\t    3.5.3. Time series of Nfree...."))
+cat(crayon::green("\t\t     3.5.3. Time series of Nfree...."))
 
 df <- as.data.frame(read.csv2(file = file.path(OUTPUTS_DIR, "abundance_estimates.csv"), stringsAsFactors = F)%>%
                       dplyr::mutate(timestamp = as.Date(timestamp))%>%
@@ -232,7 +232,7 @@ if(is.numeric(SPATIAL_SCALE))
 cat("Done.\n")
 
 #### 4. Quarterly average of <Ntotal>   ----------------------------------------------------------------------------------
-cat(crayon::green("\t\t    3.5.4. Time series of Ntotal...."))
+cat(crayon::green("\t\t     3.5.4. Time series of Ntotal...."))
 
 df <- as.data.frame(read.csv2(file = file.path(OUTPUTS_DIR, "abundance_estimates.csv"), stringsAsFactors = F)%>%
                       dplyr::mutate(timestamp = as.Date(timestamp))%>%
@@ -320,7 +320,7 @@ cat("Done.\n")
 
 
 #### 5. Global average abundance ------------------------------------------------------------------------
-cat(crayon::green("\t\t    3.5.5. Time series of global average abundance...."))
+cat(crayon::green("\t\t     3.5.5. Time series of global average abundance...."))
 
 df <- as.data.frame(read.csv2(file = file.path(OUTPUTS_DIR, "globalAbundanceAvg.csv"), stringsAsFactors = F)%>%
                       dplyr::filter(CRT==CRT_THEO)%>%
